@@ -12,6 +12,8 @@ class TransportCompany:
         for exc_veh in self.vehicles:
             if exc_veh == vehicle:
                 raise TypeError(f"Введенное средство уже существует")
+            if exc_veh.vehicle_id == vehicle.vehicle_id:
+                raise TypeError("Введено уже существующее ID")
         self.vehicles.append(vehicle)
         self.clients += vehicle.clients_list
         return print(f"\nВ компанию {self.name} добавлено новое транспортное средство {vehicle}\n")
@@ -61,7 +63,7 @@ class TransportCompany:
                 avaliable_w = vehicl.capacity - vehicl.current_load
                 if avaliable_w >= clnt.cargo_weight:
                     vehicl.current_load += clnt.cargo_weight
-                    #clnt.cargo_weight = 0
+                    clnt.cargo_weight = 0
                     complete_cl += 1
                     break
 
