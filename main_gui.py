@@ -1,8 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
-from transport.Vehicle import Vehicle
-from transport.TransportCompany import TransportCompany
-from transport.Client import Client
+from transport import Vehicle
+from transport import TransportCompany
+from transport import Client
+
+from tkinter import filedialog
+
+
 
 class TransportCompanyGUI:
     def __init__(self, root):
@@ -16,6 +20,19 @@ class TransportCompanyGUI:
         self.vehicle_clients = []
         
         self.create_widgets()
+        self.create_menu() 
+
+
+    def create_menu(self):
+        """Создать меню"""
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+    
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Файл", menu=file_menu)
+        file_menu.add_command(label="Сохранить результаты", command=self.save_results)
+        file_menu.add_separator()
+        file_menu.add_command(label="Выход", command=self.root.quit)
         
     def create_widgets(self):
         # Заголовок
@@ -52,6 +69,52 @@ class TransportCompanyGUI:
             width=20
         )
         exit_btn.pack(pady=10)
+
+    def save_results(self):
+        """Сохранить результаты в файл"""
+        try:
+            filename = filedialog.asksaveasfilename(
+                defaultextension=".txt",
+                filetypes=[("Текстовые файлы", "*.txt")],
+                title="Сохранить результаты"
+            )
+        
+            if filename:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(f"Результаты распределения грузов\n")
+                    f.write("=" * 50 + "\n\n")
+                
+                    # Транспорт
+                    vehicles = self.company.list_vehicles()
+                    f.write("Транспортные средства:\n")
+                    for vehicle in vehicles:
+                        f.write(f"ID: {vehicle.vehicle_id}\n")
+                        f.write(f"  Вместимость: {vehicle.capacity} т\n")
+                        f.write(f"  Загружено: {vehicle.current_load} т\n")
+                    
+                        if vehicle.clients_list:
+                            f.write(f"  Клиенты:\n")
+                            for client in vehicle.clients_list:
+                                vip = " (VIP)" if client.is_vip else ""
+                                f.write(f"    - {client.name}: {client.cargo_weight} т{vip}\n")
+                        f.write("\n")
+                
+                    # Клиенты без транспорта
+                    f.write("Клиенты без транспорта:\n")
+                    all_clients = self.company.list_clients()
+                    assigned_clients = []
+                    for vehicle in vehicles:
+                        assigned_clients.extend(vehicle.clients_list)
+                
+                    unassigned = [c for c in all_clients if c not in assigned_clients]
+                    for client in unassigned:
+                        vip = " (VIP)" if client.is_vip else ""
+                        f.write(f"  {client.name}: {client.cargo_weight} т{vip}\n")
+            
+                messagebox.showinfo("Успех", f"Результаты сохранены в:\n{filename}")
+            
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось сохранить: {str(e)}")
     
     def create_vehicles_tab(self, parent):
         # Кнопка обновления
@@ -185,9 +248,19 @@ class TransportCompanyGUI:
             command=self.optimize_distribution,
             width=25
         )
-        optimize_btn.pack(pady=20)
+        optimize_btn.pack(pady=10)
+
+
+        #Кнопка сохранения результатов
+        save_btn = tk.Button(
+        parent,
+        text="Сохранить результаты",
+        command=self.save_results,
+        width=25
+        )
+        save_btn.pack(pady=10)
         
-        # Результаты
+        #Результаты
         tk.Label(parent, text="Результаты:").pack(pady=5)
         
         self.result_text = scrolledtext.ScrolledText(
@@ -349,13 +422,13 @@ class TransportCompanyGUI:
             messagebox.showerror("Ошибка", "Неверный вес")
     
     def optimize_distribution(self):
-        """Запустить оптимизацию распределения"""
+        """Запустить распределение"""
         try:
             self.company.optimize_cargo_distribution()
             
             # Показываем результаты
             self.result_text.delete(1.0, tk.END)
-            self.result_text.insert(tk.END, "Оптимизация завершена!\n\n")
+            self.result_text.insert(tk.END, "Распределение грузов завершено\n\n")
             
             # Показываем обновленные списки
             self.show_vehicles()
